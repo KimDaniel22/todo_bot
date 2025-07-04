@@ -23,48 +23,40 @@ logger = logging.getLogger(__name__)
 init_db()
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработчик команды /start"""
-    user = update.effective_user
     await update.message.reply_text(
-        f"Привет, {user.first_name}! 👋\n\n"
-        "Я бот для управления задачами. Вот что я умею:\n"
-        "- /add - добавить новую задачу\n"
-        "- /list - показать список задач\n"
-        "- Просто напиши мне задачу, и я её добавлю"
+        "Привет! Я бот для управления задачами. Используй:\n"
+        "- /add - добавить задачу\n"
+        "- /list - показать список"
     )
 
 async def add_task_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработчик команды /add"""
-    await update.message.reply_text("✏️ Напиши задачу, которую нужно добавить:")
+    await update.message.reply_text("✏️ Напиши задачу:")
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    task_text = update.message.text
+    add_task(user_id, task_text)
+    await update.message.reply_text(f"✅ Добавлено: {task_text}")
+    await list_tasks(update, context)
 
 async def list_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Показывает список задач с кнопками управления"""
-    user_id = update.effective_user.id
-    tasks = get_tasks(user_id)
-    
+    tasks = get_tasks(update.effective_user.id)
     if not tasks:
-        await update.message.reply_text("📭 У тебя пока нет задач!")
+        await update.message.reply_text("📭 Список задач пуст!")
         return
     
-    message = "📝 <b>Твой список задач:</b>\n\n"
-    keyboard = []
+    message = "📝 <b>Ваши задачи:</b>\n" + "\n".join(
+        f"{'✅' if completed else '❌'} {text}"
+        for _, text, completed in tasks
+    )
     
-    for task_id, task_text, is_completed in tasks:
-        status = "✅" if is_completed else "❌"
-        message += f"{status} {task_text}\n"
-        
-        keyboard.append([
-            InlineKeyboardButton(
-                "🗑️ Удалить",
-                callback_data=f"delete_{task_id}"
-            ),
-            InlineKeyboardButton(
-                "✅ Отметить" if not is_completed else "❌ Снять",
-                callback_data=f"toggle_{task_id}"
-            )
-        ])
+    keyboard = [
+        [
+            InlineKeyboardButton("🗑️ Удалить", callback_data=f"delete_{id}"),
+            InlineKeyboardButton("✅ Отметить", callback_data=f"toggle_{id}")
+        ] for id, _, _ in tasks
+    ]
     
-    keyboard.append([InlineKeyboardButton("🔄 Обновить", callback_data="refresh")])
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     if update.callback_query:
@@ -80,44 +72,22 @@ async def list_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode='HTML'
         )
 
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обрабатывает текстовые сообщения как новые задачи"""
-    user_id = update.effective_user.id
-    task_text = update.message.text
-    
-    if task_text.startswith('/'):
-        return
-    
-    add_task(user_id, task_text)
-    await update.message.reply_text(f"✅ Задача добавлена: {task_text}")
-    await list_tasks(update, context)
-
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обрабатывает нажатия на inline-кнопки"""
     query = update.callback_query
-    user_id = query.from_user.id
     data = query.data
-    
-    await query.answer()
     
     if data.startswith('delete_'):
         task_id = int(data.split('_')[1])
-        delete_task(task_id, user_id)
-        await query.edit_message_text(text="🗑️ Задача удалена!")
-        await list_tasks(update, context)
-    
+        delete_task(task_id, query.from_user.id)
+        await query.answer("🗑️ Удалено!")
     elif data.startswith('toggle_'):
         task_id = int(data.split('_')[1])
-        toggle_task(task_id, user_id)
-        await query.answer("Статус обновлён!")
-        await list_tasks(update, context)
+        toggle_task(task_id, query.from_user.id)
+        await query.answer("✅ Статус изменён!")
     
-    elif data == 'refresh':
-        await query.answer("Список обновлён!")
-        await list_tasks(update, context)
+    await list_tasks(update, context)
 
 def main():
-    """Запускает бота"""
     application = Application.builder().token(TOKEN).build()
     
     # Регистрация обработчиков
@@ -126,18 +96,19 @@ def main():
     application.add_handler(CommandHandler("list", list_tasks))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     application.add_handler(CallbackQueryHandler(button_callback))
-    
-    # Запуск бота
-    if os.getenv('ENVIRONMENT') == 'DEV':
-        application.run_polling()
-    else:
-        port = int(os.environ.get("PORT", 10000))
+
+    # Запуск (Webhook для Render / Polling для локальной разработки)
+    if os.getenv('ENVIRONMENT') == 'PROD':
+        port = int(os.getenv('PORT', 10000))
         application.run_webhook(
             listen="0.0.0.0",
             port=port,
-            webhook_url=f"https://{os.environ.get('RENDER_EXTERNAL_HOSTNAME')}/webhook",
-            secret_token=os.environ.get("WEBHOOK_SECRET", "")
+            webhook_url=f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/webhook",
+            secret_token=os.getenv('WEBHOOK_SECRET'),
+            drop_pending_updates=True
         )
+    else:
+        application.run_polling()
 
 if __name__ == '__main__':
     main()
