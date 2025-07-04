@@ -111,4 +111,33 @@ def main():
         application.run_polling()
 
 if __name__ == '__main__':
-    main()
+    def main():
+        try:
+            application = Application.builder().token(TOKEN).build()
+            
+            # Регистрация обработчиков
+            application.add_handler(CommandHandler("start", start))
+            application.add_handler(CommandHandler("add", add_task_command))
+            application.add_handler(CommandHandler("list", list_tasks))
+            application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+            application.add_handler(CallbackQueryHandler(button_callback))
+
+            # Конфигурация для Render
+            if os.getenv('ENVIRONMENT') == 'PROD':
+                port = int(os.getenv('PORT', 10000))
+                logger.info(f"Starting webhook on port {port}")
+                
+                application.run_webhook(
+                    listen="0.0.0.0",
+                    port=port,
+                    webhook_url=f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/webhook",
+                    secret_token=os.getenv('WEBHOOK_SECRET'),
+                    drop_pending_updates=True,
+                    stop_signals=None  # Отключаем реакцию на сигналы остановки
+                )
+            else:
+                application.run_polling()
+                
+        except Exception as e:
+            logger.critical(f"Fatal error: {e}", exc_info=True)
+            raise
