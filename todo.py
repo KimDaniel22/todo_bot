@@ -104,11 +104,11 @@ def main():
                 drop_pending_updates=True
             )
         else:
-            logger.info("🔍 Бот запущен в режиме DEV (Polling)")
+            logger.info("Бот запущен в режиме DEV (Polling)")
             application.run_polling()
             
     except Exception as e:
-        logger.critical(f"💥 Критическая ошибка: {e}", exc_info=True)
+        logger.critical(f" Критическая ошибка: {e}", exc_info=True)
         raise
 
 if __name__ == '__main__':
@@ -128,7 +128,7 @@ if __name__ == '__main__':
     #         try:
     #             if os.getenv('ENVIRONMENT') == 'PROD':
     #                 port = int(os.getenv('PORT', 10000))
-    #                 logger.info("🔄 Запуск вебхука...")
+    #                 logger.info("Запуск вебхука...")
     #                 application.run_webhook(
     #                     listen="0.0.0.0",
     #                     port=port,
@@ -139,5 +139,5 @@ if __name__ == '__main__':
     #             else:
     #                 application.run_polling()
     #         except Exception as e:
-    #             logger.error(f"⚠️ Ошибка: {e}. Перезапуск через 5 секунд...")
+    #             logger.error(f"Ошибка: {e}. Перезапуск через 5 секунд...")
     #             time.sleep(5)

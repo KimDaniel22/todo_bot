@@ -13,4 +13,4 @@ COPY . .
 
 EXPOSE 10000
 
-CMD ["python", "-u", "bot.py"]
+CMD ["python", "-u", "todo.py"]
