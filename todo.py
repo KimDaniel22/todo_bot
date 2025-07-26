@@ -99,7 +99,7 @@ def main():
             application.run_webhook(
                 listen="0.0.0.0",
                 port=port,
-                webhook_url=f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}",
+                webhook_url=f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/",
                 secret_token=os.getenv('WEBHOOK_SECRET'),
                 drop_pending_updates=True
             )
