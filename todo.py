@@ -113,31 +113,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    # def main():
-    #     application = Application.builder().token(TOKEN).build()
-        
-    #     # Регистрация обработчиков
-    #     application.add_handler(CommandHandler("start", start))
-    #     application.add_handler(CommandHandler("add", add_task_command))
-    #     application.add_handler(CommandHandler("list", list_tasks))
-    #     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    #     application.add_handler(CallbackQueryHandler(button_callback))
-
-    #     # Вечный цикл для Render
-    #     while True:
-    #         try:
-    #             if os.getenv('ENVIRONMENT') == 'PROD':
-    #                 port = int(os.getenv('PORT', 10000))
-    #                 logger.info("Запуск вебхука...")
-    #                 application.run_webhook(
-    #                     listen="0.0.0.0",
-    #                     port=port,
-    #                     webhook_url=f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/webhook",
-    #                     secret_token=os.getenv('WEBHOOK_SECRET'),
-    #                     drop_pending_updates=True
-    #                 )
-    #             else:
-    #                 application.run_polling()
-    #         except Exception as e:
-    #             logger.error(f"Ошибка: {e}. Перезапуск через 5 секунд...")
-    #             time.sleep(5)
